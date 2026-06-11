@@ -133,11 +133,11 @@ function rowReset(row, layer) {
 			run(layers[lr].doReset, layers[lr], layer)
 		}
 		else
-			if(tmp[layer].row > tmp[lr].row && !isNaN(row)) layerDataReset(lr)
+			if(tmp[layer].row > tmp[lr].row && !isNaN(row)) layerDataReset(lr, [], layer)
 	}
 }
 
-function layerDataReset(layer, keep = []) {
+function layerDataReset(layer, keep = [], resettingLayer = null) {
 	let storedData = {unlocked: player[layer].unlocked, forceTooltip: player[layer].forceTooltip, noRespecConfirm: player[layer].noRespecConfirm, prevTab:player[layer].prevTab} // Always keep these
 
 	for (thing in keep) {
@@ -151,6 +151,23 @@ function layerDataReset(layer, keep = []) {
 	Vue.set(player[layer], "grid", getStartGrid(layer))
 
 	layOver(player[layer], getStartLayerData(layer))
+	// Optionally preserve some upgrades depending on the resetting layer's milestones
+	let preservedUpgrades = []
+	if (layer == 'A' && resettingLayer && hasMilestone(resettingLayer, 0)) {
+		// preserve first-row upgrades (ids like 11,12... where first digit is 1)
+		for (let i=0;i<player[layer].upgrades.length;i++){
+			let id = Number(player[layer].upgrades[i])
+			if (Math.floor(id/10) == 1) preservedUpgrades.push(player[layer].upgrades[i])
+		}
+	}
+
+	if (layer == 'A' && resettingLayer && hasMilestone(resettingLayer, 3)) {
+		for (let i=0;i<player[layer].upgrades.length;i++){
+			let id = Number(player[layer].upgrades[i])
+			if (Math.floor(id/10) == 2) preservedUpgrades.push(player[layer].upgrades[i])
+		}
+	}
+
 	player[layer].upgrades = []
 	player[layer].milestones = []
 	player[layer].achievements = []
@@ -158,6 +175,8 @@ function layerDataReset(layer, keep = []) {
 	for (thing in storedData) {
 		player[layer][thing] =storedData[thing]
 	}
+
+	if (preservedUpgrades.length>0) player[layer].upgrades = preservedUpgrades
 }
 
 
@@ -195,7 +214,7 @@ function doReset(layer, force=false) {
 		updateMilestones(layer)
 		updateAchievements(layer)
 
-		if (!player[layer].unlocked) {
+		if (!player[layer].unlocked && (layers[layer].autoUnlock !== false)) {
 			player[layer].unlocked = true;
 			needCanvasUpdate = true;
 

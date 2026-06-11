@@ -88,6 +88,8 @@ function buyUpg(layer, id) {
 	if (upg.onPurchase != undefined)
 		run(upg.onPurchase, upg)
 	needCanvasUpdate = true
+	// Refresh temporary calculations so point generation updates immediately
+	updateTemp()
 }
 
 function buyMaxBuyable(layer, id) {
